@@ -21,6 +21,27 @@ Updates holen:
 claude plugin marketplace update claude-erweiterungen
 ```
 
+## Fehlerbehebung
+
+**`EPERM: operation not permitted, rename '…K8nsch-claude-erweiterungen..clone' -> '…K8nsch-claude-erweiterungen'`** (Windows)
+
+Der Download hat geklappt, nur das Umbenennen des Ordners ist gescheitert. Meist liegen dort noch Reste eines früheren Installationsversuchs. Den Fehler beim anschließenden SSH-Versuch kannst du ignorieren. Reste löschen und erneut hinzufügen (PowerShell):
+
+```
+Remove-Item -Recurse -Force "$HOME\.claude\plugins\marketplaces\K8nsch-claude-erweiterungen*" -ErrorAction SilentlyContinue
+claude plugin marketplace add K8nsch/claude-erweiterungen
+```
+
+Scheitert es weiter, sperrt vermutlich ein Virenscanner die frisch geladenen Dateien. Dann das Repo selbst klonen und als lokalen Marketplace hinzufügen:
+
+```
+git clone https://github.com/K8nsch/claude-erweiterungen.git "$HOME\claude-erweiterungen"
+claude plugin marketplace add "$HOME\claude-erweiterungen"
+claude plugin install cache-lotse@claude-erweiterungen
+```
+
+Updates holst du in diesem Fall mit `git -C "$HOME\claude-erweiterungen" pull`.
+
 ## Lizenz
 
 MIT, siehe [LICENSE](LICENSE).
