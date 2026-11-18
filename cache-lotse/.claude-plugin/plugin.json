@@ -1,6 +1,6 @@
 {
   "name": "cache-lotse",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Cache-Countdown, Kontext und Limits über dem Prompt; steuert Komprimieren und Warmhalten des Prompt-Caches.",
   "author": { "name": "K8nsch" },
   "types": "./types/index.d.ts"

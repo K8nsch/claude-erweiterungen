@@ -21,7 +21,7 @@ const KEEP_WARM_SECONDS = 120
 // session must not keep refreshing.
 const MAX_WARM_REFRESHES = 2
 const TICK_MS = 15_000
-const GAUGE_CELLS = 10
+const GAUGE_CELLS = 5
 const ALERT_SOUND = 'sounds/gong.wav'
 
 const DEFAULT_SETTINGS: CacheLotseSettings = { autoCompact: true, keepWarm: false }
@@ -59,7 +59,7 @@ async function readUsage($: EngineInterface): Promise<CacheLotseReading> {
   }
 }
 
-// Ten-cell gauge, one cell per started ten percent rounded to the nearest.
+// Five-cell gauge, one cell per twenty percent, rounded to the nearest cell.
 function gauge(usedPercent: number): string {
   const cells = Math.min(GAUGE_CELLS, Math.max(0, Math.floor((usedPercent * GAUGE_CELLS + 50) / 100)))
   return '▰'.repeat(cells).padEnd(GAUGE_CELLS, '▱')
@@ -227,12 +227,6 @@ async function tick($: EngineInterface): Promise<void> {
   }
 }
 
-// Places a dim divider between the segments that are present.
-function divided<T>(segments: (T | null)[], divider: (key: string) => T): T[] {
-  const present = segments.filter((segment): segment is T => segment !== null)
-  return present.flatMap((segment, i) => (i === 0 ? [segment] : [divider(`divider-${i}`), segment]))
-}
-
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
@@ -313,11 +307,6 @@ export const register: Register = on => {
     const showWarm = settings.keepWarm && !busy && !isCompacted && last !== null
     const warmNote = `aufgefrischt ${warm.count}/${MAX_WARM_REFRESHES}${warm.lastCacheRead === null ? '' : ` (${compactNumber(warm.lastCacheRead)} aus Cache)`}`
 
-    const divider = (k: string) => (
-      <Text key={k} dimColor>
-        {'  ┊  '}
-      </Text>
-    )
     const cacheSegment = (
       <Text key="cache">
         <Text dimColor>Cache </Text>
@@ -338,7 +327,7 @@ export const register: Register = on => {
       ? meter('context', 'Kontext', usage.context.usedPercent, `${compactNumber(usage.context.tokens)}/${compactNumber(usage.context.window)}`)
       : null
     const five = usage?.fiveHour ?? null
-    const fiveExtra = five === null || five.resetAt === null || t <= 0 ? null : five.resetAt <= t ? 'Reset fällig' : `Reset in ${duration(five.resetAt - t)}`
+    const fiveExtra = five === null || five.resetAt === null || t <= 0 ? null : five.resetAt <= t ? 'Reset fällig' : duration(five.resetAt - t)
     const fiveSegment = five ? meter('five-hour', '5h', five.usedPercent, fiveExtra) : null
     const week = usage?.week ?? null
     const weekSegment = week ? (
@@ -350,14 +339,10 @@ export const register: Register = on => {
     const costSegment =
       usage && usage.costUsd !== null ? (
         <Text key="cost" dimColor>
-          API-Wert {usage.costUsd.toFixed(2).replace('.', ',')} $
+          {usage.costUsd.toFixed(2).replace('.', ',')} $
         </Text>
       ) : null
-
-    const rows =
-      e.props.bodyColumns < 110
-        ? [[cacheSegment], [contextSegment], [fiveSegment, weekSegment, costSegment]]
-        : [[cacheSegment, contextSegment, fiveSegment, weekSegment, costSegment]]
+    const meters = [contextSegment, fiveSegment, weekSegment, costSegment].filter(segment => segment !== null)
 
     const isAlert = !busy && !isCompacted && !canKeepWarm() && left > 0 && left <= WARN_MINUTES * 60_000
 
@@ -368,30 +353,33 @@ export const register: Register = on => {
             ▲ Cache-Ablauf in {duration(left)} · weiterschreiben, „Warm halten“ einschalten oder komprimieren
           </Text>
         )}
-        {rows
-          .map(row => divided(row, divider))
-          .filter(row => row.length > 0)
-          .map((row, i) => (
-            <Box key={`row-${i}`}>{row}</Box>
-          ))}
-        <Box columnGap={1} marginTop={air}>
-          {!busy && last !== null && <Button key="compact" label="Komprimieren" onPress={() => void compactNow($)} />}
-          <Button
-            key="auto-compact"
-            label={`${settings.autoCompact ? '☑' : '☐'} Auto-Compact`}
-            dimColor={!settings.autoCompact}
-            onPress={() => void saveSettings($, { ...settings, autoCompact: !settings.autoCompact })}
-          />
-          <Button
-            key="keep-warm"
-            label={`${settings.keepWarm ? '☑' : '☐'} Warm halten`}
-            dimColor={!settings.keepWarm}
-            onPress={() => {
-              warm = { count: 0, lastCacheRead: null, error: null }
-              void saveSettings($, { ...settings, keepWarm: !settings.keepWarm })
-            }}
-          />
+        {/* Status left, controls right; on a narrow body the controls wrap below. */}
+        <Box flexWrap="wrap" justifyContent="space-between" alignItems="center" columnGap={2} rowGap={air}>
+          {cacheSegment}
+          <Box columnGap={1}>
+            {!busy && last !== null && <Button key="compact" label="Komprimieren" onPress={() => void compactNow($)} />}
+            <Button
+              key="auto-compact"
+              label={`${settings.autoCompact ? '☑' : '☐'} Auto-Compact`}
+              dimColor={!settings.autoCompact}
+              onPress={() => void saveSettings($, { ...settings, autoCompact: !settings.autoCompact })}
+            />
+            <Button
+              key="keep-warm"
+              label={`${settings.keepWarm ? '☑' : '☐'} Warm halten`}
+              dimColor={!settings.keepWarm}
+              onPress={() => {
+                warm = { count: 0, lastCacheRead: null, error: null }
+                void saveSettings($, { ...settings, keepWarm: !settings.keepWarm })
+              }}
+            />
+          </Box>
         </Box>
+        {meters.length > 0 && (
+          <Box flexWrap="wrap" columnGap={3}>
+            {meters}
+          </Box>
+        )}
       </Box>
     )
 

@@ -80,7 +80,7 @@ describe('cache-lotse', () => {
         expect(await ui.find({ type: 'Text', text: /1:00 h übrig/ }), 'cache').toBeDefined()
         expect(await ui.find({ type: 'Text', text: /13 %/ }), 'context percent').toBeDefined()
         expect(await ui.find({ type: 'Text', text: /132k\/1M/ }), 'context tokens').toBeDefined()
-        expect(await ui.find({ type: 'Text', text: /Reset in 2:39 h/ }), '5h reset').toBeDefined()
+        expect(await ui.find({ type: 'Text', text: /5 % · 2:39 h/ }), '5h reset').toBeDefined()
         expect(await ui.find({ type: 'Text', text: /11,32 \$/ }), 'cost').toBeDefined()
         expect((await ui.find({ type: 'Button', key: 'auto-compact' }))?.text, 'auto-compact on by default').toContain('☑')
         expect((await ui.find({ type: 'Button', key: 'keep-warm' }))?.text, 'keep-warm off by default').toContain('☐')
@@ -166,7 +166,7 @@ describe('cache-lotse', () => {
     await clock.advance(21 * 60_000)
     expect(await ui.find({ type: 'Text', text: /Reset in 0 min|Reset fällig/ }), 'no stale countdown').toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /33 %/ }), 'no stale percent').toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /Reset in 4:59 h/ }), 'new window').toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /0 % · 4:59 h/ }), 'new window').toBeDefined()
   })
 
   test('5h-Limit: „Reset fällig“, solange noch keine neuen Werte da sind', async ($, on) => {
