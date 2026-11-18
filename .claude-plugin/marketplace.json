@@ -1,0 +1,16 @@
+{
+  "name": "claude-erweiterungen",
+  "owner": {
+    "name": "K8nsch"
+  },
+  "metadata": {
+    "description": "Eigene Claude Code Mods."
+  },
+  "plugins": [
+    {
+      "name": "cache-lotse",
+      "source": "./cache-lotse",
+      "description": "Cache-Countdown, Kontext, 5-Stunden- und Wochenlimit über dem Prompt; Komprimieren-Knopf, Auto-Compact- und Warmhalten-Schalter."
+    }
+  ]
+}
